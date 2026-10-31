@@ -347,7 +347,11 @@ try {
     // una compra autorizada. La consulta no implica crear una ficha.
     try {
         require_once __DIR__.'/royal_ai_fichas_integracion.php';
-        if (function_exists('rai_ficha_intentar')) {
+        // La consulta comercial no debe activar el motor de fichas.
+        // La autorizacion de compra se determina con el ultimo turno y contexto.
+        require_once __DIR__.'/royal_ai_sales_multi_cerebro.php';
+        $raiFichaHabilitada=rai_cerebro_habilita_ficha($history,(string)$msg['texto']);
+        if ($raiFichaHabilitada && function_exists('rai_ficha_intentar')) {
             $fichaEstado=rai_ficha_intentar($db,$crm,$key,$history,$catalog,$company,$instance,$phone,$id,$cid,(string)$msg['texto']);
             if (!is_array($fichaEstado)) $fichaEstado=['status'=>'extraccion_no_disponible'];
         }
@@ -366,7 +370,7 @@ try {
     } elseif (($fichaEstado['status']??'')==='guardada') {
         $answer='¡Muchas gracias por su compra y por confiar en nosotros! Su ficha #'.(int)$fichaEstado['ficha_id'].' fue registrada y enviada al supervisor para revision. Cuando sea aprobada, podremos coordinar su preparacion y entrega. ¿Le gustaria que le comparta algunos consejos para aprovechar mejor su paca?';
     } elseif (($fichaEstado['status']??'')==='ya_guardada') {
-        $answer='Su ficha #'.(int)$fichaEstado['ficha_id'].' ya esta registrada y en proceso de revision. No se ha creado otra ficha.';
+        $answer=rai_answer($key,$history,$catalog,$quote,$memory.$mediaContext.$turnGuidance.' Ya existe una ficha previa. Solo mencione su numero si el cliente pregunta por ella. No cree otra ficha ni afirme despacho o aprobacion.',$agentName);
     } elseif (($fichaEstado['status']??'')==='total_pendiente') {
         $answer='El total verificado con entrega es L.'.number_format((float)$fichaEstado['total'],2,'.',',').'. ¿Me confirma que esta de acuerdo con ese total para continuar la ficha?';
     } elseif (($fichaEstado['status']??'')==='datos_pendientes') {
